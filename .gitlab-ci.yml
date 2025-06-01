@@ -1,0 +1,12 @@
+stages:
+  - deploy
+
+deploy_prod:
+  stage: deploy
+  tags:
+    - deploy
+  script:
+    - echo "Déploiement du projet sur le serveur"
+    - ssh root@localhost 'bash -s' < ./deploy.sh
+  only:
+    - master
