@@ -2,11 +2,16 @@ from django.urls import path
 from api.views.auth_views import RegisterView, LoginView, ProfileView
 from api.views.blog_views import BlogPostListCreateView, BlogPostDetailView,BlogPostLikeToggleView,BlogPostCommentListCreateView, BlogPostUpdateDeleteView,BlogPostUserPostsView,BlogPostCommentUpdateDeleteView,BlogPostUserCommentsView
 from api.views.folder_views import UserFolderListCreateView, UserFolderDetailView, UserFileListCreateView, UserFileDetailView,CreateEmptyFileView,UserFileUpdateView
+from api.views.transcription_views import upload_and_transcribe
+from api.views.transcription_views import upload_form, get_summary
+
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='register'),
     path('login/', LoginView.as_view(), name='login'),
     path('profile/', ProfileView.as_view(), name='complete-profile'),
-
+    path('upload-transcription/', upload_and_transcribe),
+    path('get-summary/<int:transcription_id>/', get_summary),  # 👈 AJOUT ICI
+    path('test-upload/', upload_form),
     path('folders/', UserFolderListCreateView.as_view(), name='folder-list-create'),
     path('folders/<int:folder_id>/', UserFolderDetailView.as_view(), name='folder-detail'),
     path('folders/<int:folder_id>/files/', UserFileListCreateView.as_view(), name='file-list-create'),

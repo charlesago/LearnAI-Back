@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Upload Audio</title>
+</head>
+<body>
+  <h1>Transcription LearnIA</h1>
+
+  <form id="uploadForm" enctype="multipart/form-data">
+    <input type="file" name="audio" id="audioInput" />
+    <input type="text" name="folder" placeholder="Nom du dossier" />
+    <button type="submit">Envoyer</button>
+  </form>
+
+  <button id="startRec">🎤 Démarrer micro</button>
+  <button id="stopRec" disabled>⏹️ Stop & envoyer</button>
+
+  <pre id="result"></pre>
+
+  <script>
+    let mediaRecorder;
+    let audioChunks = [];
+
+    const startBtn = document.getElementById("startRec");
+    const stopBtn = document.getElementById("stopRec");
+    const form = document.getElementById("uploadForm");
+    const result = document.getElementById("result");
+
+    startBtn.onclick = async () => {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorder = new MediaRecorder(stream);
+      audioChunks = [];
+
+      mediaRecorder.ondataavailable = e => {
+        if (e.data.size > 0) audioChunks.push(e.data);
+      };
+
+      mediaRecorder.onstop = async () => {
+        const blob = new Blob(audioChunks, { type: "audio/webm" });
+        const file = new File([blob], "audio.webm", { type: "audio/webm" });
+
+        const formData = new FormData();
+        formData.append("audio", file);
+        formData.append("folder", "microphone");
+
+        const response = await fetch("/api/upload-transcription/", {
+          method: "POST",
+          body: formData
+        });
+
+        const data = await response.json();
+        const id = data.id;
+
+        const interval = setInterval(async () => {
+          const res = await fetch(`/api/get-summary/${id}/`);
+          const json = await res.json();
+          if (json.status === "done") {
+            result.textContent = json.summary;
+            clearInterval(interval);
+          } else {
+            result.textContent = "Traitement IA en cours...";
+          }
+        }, 3000);
+      };
+
+      mediaRecorder.start();
+      startBtn.disabled = true;
+      stopBtn.disabled = false;
+    };
+
+    stopBtn.onclick = () => {
+      mediaRecorder.stop();
+      startBtn.disabled = false;
+      stopBtn.disabled = true;
+    };
+
+    form.addEventListener("submit", async function (e) {
+      e.preventDefault();
+      const formData = new FormData(this);
+      result.textContent = "Transcription en cours...";
+
+      const res = await fetch("/api/upload-transcription/", {
+        method: "POST",
+        body: formData
+      });
+      const data = await res.json();
+      const id = data.id;
+
+      const interval = setInterval(async () => {
+        const res = await fetch(`/api/get-summary/${id}/`);
+        const json = await res.json();
+        if (json.status === "done") {
+          result.textContent = json.summary;
+          clearInterval(interval);
+        } else {
+          result.textContent = "Traitement IA en cours...";
+        }
+      }, 3000);
+    });
+  </script>
+</body>
+</html>
